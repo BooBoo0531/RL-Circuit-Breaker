@@ -1,0 +1,26 @@
+# Virtual Environment
+rl_env/
+
+# Logs
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# TensorBoard
+*.tensorboard
+events.out.tfevents.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
