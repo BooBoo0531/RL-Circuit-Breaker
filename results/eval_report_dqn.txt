@@ -1,0 +1,75 @@
+Circuit Breaker RL Evaluation Report
+Generated: 2026-05-13 22:37:57
+Model: DQN
+
+======================================================================
+1. ENVIRONMENT SANITY CHECK
+======================================================================
+Observation Range:
+  Min: [0.0082444 0.0046833 0.8882927 0.9888293 0.        0.        0.       ]
+  Max: [0.0100889 0.563981  0.9127962 0.9912796 0.        0.        0.       ]
+
+Reward Statistics:
+  Mean: -3.76
+  Std:  0.98
+  Range: [-4.58, -2.50]
+
+======================================================================
+2. POLICY COMPARISON
+======================================================================
+Random Policy:
+  Mean Reward: -32.95 +/- 247.06
+
+Trained DQN Policy:
+  Mean Reward: 22.54 +/- 228.01
+
+Improvement: +168.4%
+
+======================================================================
+3. REWARD BREAKDOWN BY SCENARIO
+======================================================================
+
+Scenario 1:
+  Throughput:        4.03
+  Latency:          0.00
+  Error:            0.00
+  False Pos:        0.00
+  Action Bonus:     2.00
+  Net Reward:       6.03
+
+Scenario 2:
+  Throughput:        1.00
+  Latency:          0.00
+  Error:            0.00
+  False Pos:        0.00
+  Action Bonus:     2.00
+  Net Reward:       3.00
+
+Scenario 3:
+  Throughput:        0.45
+  Latency:         -5.00
+  Error:            0.00
+  False Pos:        0.00
+  Action Bonus:     2.00
+  Net Reward:      -2.55
+
+Scenario 4:
+  Throughput:        2.34
+  Latency:          0.00
+  Error:           -4.07
+  False Pos:        0.00
+  Action Bonus:     2.00
+  Net Reward:       0.27
+
+Scenario 5:
+  Throughput:        2.66
+  Latency:          0.00
+  Error:           -6.69
+  False Pos:        0.00
+  Action Bonus:     2.00
+  Net Reward:      -2.03
+
+======================================================================
+SUMMARY
+======================================================================
+Assessment: PASS (Trained model outperforms random by +168.4%)
