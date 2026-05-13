@@ -1,0 +1,57 @@
+==========================================================================
+COMPREHENSIVE EVALUATION REPORT
+RL for Adaptive Circuit Breaking and Retry Strategy
+Generated: 2026-05-13 23:09:38
+Episodes per policy: 50
+==========================================================================
+
+
+MULTI-BASELINE COMPARISON
+----------------------------------------
+  Random         Mean: -85.22 +/- 262.63
+  Rule-based     Mean: 10.05 +/- 238.70
+  PPO            Mean: 81.89 +/- 239.36
+  DQN            Mean: 78.74 +/- 226.55
+
+
+ACTION APPROPRIATENESS (%)
+----------------------------------------
+  Rule-based     Overall: 100.0%  High-err: 100.0%  Low-err: 100.0%
+  PPO            Overall: 100.0%  High-err: 100.0%  Low-err: 100.0%
+  DQN            Overall: 100.0%  High-err: 100.0%  Low-err: 100.0%
+
+
+SYSTEM METRICS
+----------------------------------------
+  Random:
+    SLO Compliance:  76.0%
+    Avg Error Rate:  0.1637
+    Throughput:      0.0272
+    FP Rate:         40.9%
+    Reaction Time:   1.3 steps
+  Rule-based:
+    SLO Compliance:  84.0%
+    Avg Error Rate:  0.2471
+    Throughput:      0.0324
+    FP Rate:         0.0%
+    Reaction Time:   1.0 steps
+  PPO:
+    SLO Compliance:  80.0%
+    Avg Error Rate:  0.2472
+    Throughput:      0.0322
+    FP Rate:         0.0%
+    Reaction Time:   1.0 steps
+  DQN:
+    SLO Compliance:  74.0%
+    Avg Error Rate:  0.2036
+    Throughput:      0.0287
+    FP Rate:         0.0%
+    Reaction Time:   1.0 steps
+
+
+==========================================================================
+CONCLUSION
+==========================================================================
+  Best performer: PPO (mean reward: 81.89)
+  RL models outperform rule-based heuristic → RL approach justified
+==========================================================================
