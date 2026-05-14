@@ -1,17 +1,17 @@
 ==========================================================================
 COMPREHENSIVE EVALUATION REPORT
 RL for Adaptive Circuit Breaking and Retry Strategy
-Generated: 2026-05-13 23:09:38
+Generated: 2026-05-14 21:40:02
 Episodes per policy: 50
 ==========================================================================
 
 
 MULTI-BASELINE COMPARISON
 ----------------------------------------
-  Random         Mean: -85.22 +/- 262.63
-  Rule-based     Mean: 10.05 +/- 238.70
-  PPO            Mean: 81.89 +/- 239.36
-  DQN            Mean: 78.74 +/- 226.55
+  Random         Mean: -20.02 +/- 243.63
+  Rule-based     Mean: 36.07 +/- 230.08
+  PPO            Mean: 80.07 +/- 234.42
+  DQN            Mean: 18.04 +/- 231.71
 
 
 ACTION APPROPRIATENESS (%)
@@ -24,27 +24,27 @@ ACTION APPROPRIATENESS (%)
 SYSTEM METRICS
 ----------------------------------------
   Random:
-    SLO Compliance:  76.0%
-    Avg Error Rate:  0.1637
-    Throughput:      0.0272
-    FP Rate:         40.9%
-    Reaction Time:   1.3 steps
+    SLO Compliance:  72.0%
+    Avg Error Rate:  0.2452
+    Throughput:      0.0305
+    FP Rate:         38.5%
+    Reaction Time:   1.2 steps
   Rule-based:
-    SLO Compliance:  84.0%
-    Avg Error Rate:  0.2471
-    Throughput:      0.0324
+    SLO Compliance:  74.0%
+    Avg Error Rate:  0.2185
+    Throughput:      0.0293
     FP Rate:         0.0%
     Reaction Time:   1.0 steps
   PPO:
-    SLO Compliance:  80.0%
-    Avg Error Rate:  0.2472
-    Throughput:      0.0322
+    SLO Compliance:  92.0%
+    Avg Error Rate:  0.2121
+    Throughput:      0.0319
     FP Rate:         0.0%
     Reaction Time:   1.0 steps
   DQN:
-    SLO Compliance:  74.0%
-    Avg Error Rate:  0.2036
-    Throughput:      0.0287
+    SLO Compliance:  80.0%
+    Avg Error Rate:  0.1653
+    Throughput:      0.0272
     FP Rate:         0.0%
     Reaction Time:   1.0 steps
 
@@ -52,6 +52,6 @@ SYSTEM METRICS
 ==========================================================================
 CONCLUSION
 ==========================================================================
-  Best performer: PPO (mean reward: 81.89)
+  Best performer: PPO (mean reward: 80.07)
   RL models outperform rule-based heuristic → RL approach justified
 ==========================================================================
