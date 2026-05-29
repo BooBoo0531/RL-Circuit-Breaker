@@ -672,6 +672,22 @@ def save_comprehensive_report(baseline_results, appropriateness_results, system_
 # ==========================================================================
 
 def main():
+    # -----------------------------------------------------------------------
+    # MODEL LOADING RATIONALE
+    # -----------------------------------------------------------------------
+    # PPO  — final model ("ppo_circuit_breaker"):
+    #   compare_checkpoints.py found no statistically significant difference
+    #   between the PPO best checkpoint and the final model, and the final
+    #   model had a marginally higher mean reward, so the final model is used.
+    #   Path: ppo_circuit_breaker.zip  (saved by train_ppo.py at end of run)
+    #
+    # DQN  — best checkpoint ("logs/dqn_best_model/best_model"):
+    #   compare_checkpoints.py detected policy degradation in DQN: the best
+    #   checkpoint (saved by EvalCallback during training) outperformed the
+    #   final model, so the best checkpoint is loaded here.
+    #   Path: logs/dqn_best_model/best_model.zip  (saved by EvalCallback)
+    #   Fallback: dqn_circuit_breaker.zip (final model) if checkpoint absent.
+    # -----------------------------------------------------------------------
     print("\n" + "=" * 74)
     print("  COMPREHENSIVE EVALUATION")
     print("  RL for Adaptive Circuit Breaking and Retry Strategy")

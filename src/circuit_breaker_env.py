@@ -147,6 +147,12 @@ class CircuitBreakerEnv(gym.Env):
         error = -10.0 * err_rate
         
         # False positive: -3 if unnecessary CB open
+        # NOTE (known limitation, CB-002): `cb` here is the circuit-breaker state
+        # recorded in the dataset (environment observation), NOT the action chosen
+        # by the agent. Because the training dataset has cb==0 in every row, this
+        # penalty never fires and provides no training signal. A future fix should
+        # condition on the agent's action (e.g. action <= 1) instead of the dataset
+        # cb column to correctly penalise false-positive circuit-breaker trips.
         fp = -3.0 if (cb == 1 and err_rate < 0.05) else 0.0
         
         # Action appropriateness bonus
