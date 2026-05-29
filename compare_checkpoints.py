@@ -11,7 +11,7 @@ sys.path.insert(0, 'src')
 from stable_baselines3 import PPO, DQN
 from circuit_breaker_env import CircuitBreakerEnv
 
-N_EVAL = 30
+N_EVAL = 50  # Matches N_EVAL_EPISODES in evaluate_comprehensive.py for consistent comparison
 DATA_PATH = 'data/behavioral_dataset.csv'
 
 MODELS = [
@@ -75,6 +75,8 @@ def main():
         print(f"  Final model     : {final_str}")
 
         if bm is not None and fm is not None:
+            # 1.05 threshold = require >5% gain before declaring a winner,
+            # avoiding noise-driven verdicts from small episode counts.
             if bm > fm * 1.05:
                 verdict = "BEST wins → policy degradation occurred, use best checkpoint"
             elif fm > bm * 1.05:

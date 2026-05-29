@@ -71,7 +71,10 @@ def random_policy(env):
 def eval_convergence(env, model, model_name, n_windows=5):
     """
     Metric 1: Convergence Analysis
-    Run episodes and compare early vs late performance
+    Run episodes and compare early vs late performance.
+    NOTE: This evaluates a fixed trained model deterministically. Any variance
+    between windows reflects stochastic scenario selection by the environment,
+    NOT ongoing learning or training instability.
     """
     print_header(f"1. CONVERGENCE ANALYSIS ({model_name})")
 
@@ -373,6 +376,7 @@ def eval_system_metrics(env, models_dict):
             prev_action = None
             steps_since_err_spike = None
             reacted = False
+            spike_active = False  # tracks whether we are currently inside an error spike
 
             while not done:
                 if name == "Random":
@@ -405,15 +409,27 @@ def eval_system_metrics(env, models_dict):
                         false_positives += 1
 
                 # Metric 10: Reaction time
-                if err_rate > 0.3 and (prev_action is None or prev_action >= 3):
+                # A new spike starts when error rises above 0.3 and we are not already
+                # tracking one. Once the agent reacts (action <= 1) we record the time
+                # and close the spike. The spike also closes when error drops back below 0.3.
+                if err_rate > 0.3 and not spike_active:
+                    # New spike detected — begin counting steps to reaction
+                    spike_active = True
                     steps_since_err_spike = 0
                     reacted = False
-                if steps_since_err_spike is not None and not reacted:
+                elif err_rate <= 0.3:
+                    # Spike has subsided — reset tracking state
+                    spike_active = False
+                    steps_since_err_spike = None
+                    reacted = False
+
+                if spike_active and not reacted:
                     steps_since_err_spike += 1
                     if action <= 1:
                         reaction_times.append(steps_since_err_spike)
                         reacted = True
-                        steps_since_err_spike = None
+                        # Keep spike_active=True until error subsides so we
+                        # don't double-count a reaction within the same spike.
 
                 prev_action = action
                 obs, _, terminated, truncated, _ = env.step(action)
@@ -618,6 +634,29 @@ def save_comprehensive_report(baseline_results, appropriateness_results, system_
     else:
         report.append("  RL models do NOT outperform rule-based → needs improvement")
 
+    report.append("=" * 74)
+
+    # Known limitations
+    report.append("\n\n" + "=" * 74)
+    report.append("KNOWN LIMITATIONS")
+    report.append("=" * 74)
+    report.append("  1. TRAIN/EVAL DATASET OVERLAP (EVAL-001):")
+    report.append("     Training and evaluation use the same dataset. Metrics reflect")
+    report.append("     in-sample performance. Hold-out split (e.g. sid=5 as test) is")
+    report.append("     recommended before drawing generalization conclusions.")
+    report.append("")
+    report.append("  2. HIGH STANDARD DEVIATION FROM SCENARIO SAMPLING:")
+    report.append("     Episode reward variance is dominated by which scenario the")
+    report.append("     environment randomly selects, not by policy quality. Std values")
+    report.append("     should be interpreted with this in mind; per-scenario breakdowns")
+    report.append("     (Metric 11) provide more stable signal.")
+    report.append("")
+    report.append("  3. OFFLINE SIMULATION — NOT PRODUCTION KUBERNETES:")
+    report.append("     All results are from a pre-recorded behavioral dataset. Real")
+    report.append("     Kubernetes deployments will have one-step feedback delay, noisy")
+    report.append("     Prometheus scrape intervals, and actuation latency not captured")
+    report.append("     here. Results should be validated against a live staging cluster")
+    report.append("     before production use.")
     report.append("=" * 74)
 
     os.makedirs('results', exist_ok=True)
