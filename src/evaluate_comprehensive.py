@@ -645,31 +645,27 @@ def main():
     # Initialize environment
     env = CircuitBreakerEnv(data_path=DATA_PATH)
 
-    # Load models — prefer best checkpoint over final model (per instructor guidance)
+    # Load models — PPO: final model wins, DQN: best checkpoint wins (per compare_checkpoints.py)
     models_dict = {'Random': None, 'Rule-based': None}
 
-    print("\n  Loading models (best checkpoint preferred over final)...")
+    print("\n  Loading models...")
 
-    ppo_best_path = "logs/ppo_best_model/best_model"
+    # PPO: use final model (no degradation, final > best checkpoint)
     ppo_final_path = "ppo_circuit_breaker"
     try:
-        ppo_model = PPO.load(ppo_best_path)
+        ppo_model = PPO.load(ppo_final_path)
         models_dict['PPO'] = ppo_model
-        print(f"    PPO: loaded from best checkpoint ({ppo_best_path})")
-    except Exception:
-        try:
-            ppo_model = PPO.load(ppo_final_path)
-            models_dict['PPO'] = ppo_model
-            print(f"    PPO: best checkpoint not found, loaded final model ({ppo_final_path})")
-        except Exception as e:
-            print(f"    PPO: not found ({e})")
+        print(f"    PPO: loaded final model ({ppo_final_path}) — final wins over best checkpoint")
+    except Exception as e:
+        print(f"    PPO: not found ({e})")
 
+    # DQN: use best checkpoint (policy degradation detected)
     dqn_best_path = "logs/dqn_best_model/best_model"
     dqn_final_path = "dqn_circuit_breaker"
     try:
         dqn_model = DQN.load(dqn_best_path)
         models_dict['DQN'] = dqn_model
-        print(f"    DQN: loaded from best checkpoint ({dqn_best_path})")
+        print(f"    DQN: loaded best checkpoint ({dqn_best_path}) — policy degradation detected")
     except Exception:
         try:
             dqn_model = DQN.load(dqn_final_path)
