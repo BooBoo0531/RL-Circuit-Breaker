@@ -645,23 +645,38 @@ def main():
     # Initialize environment
     env = CircuitBreakerEnv(data_path=DATA_PATH)
 
-    # Load models
+    # Load models — prefer best checkpoint over final model (per instructor guidance)
     models_dict = {'Random': None, 'Rule-based': None}
 
-    print("\n  Loading models...")
-    try:
-        ppo_model = PPO.load("ppo_circuit_breaker")
-        models_dict['PPO'] = ppo_model
-        print("    PPO: loaded")
-    except Exception as e:
-        print(f"    PPO: not found ({e})")
+    print("\n  Loading models (best checkpoint preferred over final)...")
 
+    ppo_best_path = "./logs/best_model/best_model"
+    ppo_final_path = "ppo_circuit_breaker"
     try:
-        dqn_model = DQN.load("dqn_circuit_breaker")
+        ppo_model = PPO.load(ppo_best_path)
+        models_dict['PPO'] = ppo_model
+        print(f"    PPO: loaded from best checkpoint ({ppo_best_path})")
+    except Exception:
+        try:
+            ppo_model = PPO.load(ppo_final_path)
+            models_dict['PPO'] = ppo_model
+            print(f"    PPO: best checkpoint not found, loaded final model ({ppo_final_path})")
+        except Exception as e:
+            print(f"    PPO: not found ({e})")
+
+    dqn_best_path = "./logs/dqn_best_model/best_model"
+    dqn_final_path = "dqn_circuit_breaker"
+    try:
+        dqn_model = DQN.load(dqn_best_path)
         models_dict['DQN'] = dqn_model
-        print("    DQN: loaded")
-    except Exception as e:
-        print(f"    DQN: not found ({e})")
+        print(f"    DQN: loaded from best checkpoint ({dqn_best_path})")
+    except Exception:
+        try:
+            dqn_model = DQN.load(dqn_final_path)
+            models_dict['DQN'] = dqn_model
+            print(f"    DQN: best checkpoint not found, loaded final model ({dqn_final_path})")
+        except Exception as e:
+            print(f"    DQN: not found ({e})")
 
     # ======================================================================
     # PART A: MODEL EVALUATION
