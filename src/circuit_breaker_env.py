@@ -38,9 +38,10 @@ class CircuitBreakerEnv(gym.Env):
             dtype=np.float32
         )
         
-        # Normalization constants for features
-        self.max_rps = 1000.0
-        self.max_latency = 1000.0  # for p50, p90, p99
+        # Normalization constants — calibrated to actual dataset ranges:
+        # rps max ~84, p99 max ~991 ms (Azure Standard_B2s_v2, Fortio ~20 RPS)
+        self.max_rps = 100.0      # was 1000: rps was compressed to <9% of range
+        self.max_latency = 1000.0  # p99 reaches ~991ms so 1000 is correct
         
         # Episode management
         self.current_step = 0
@@ -136,8 +137,8 @@ class CircuitBreakerEnv(gym.Env):
         err_rate = row['err_rate']
         cb = row['cb']
         
-        # Throughput bonus: 0 to +5
-        throughput = min(rps / 20.0, 5.0)
+        # Throughput bonus: 0 to +5, normalised against max_rps
+        throughput = min((rps / self.max_rps) * 5.0, 5.0)
         
         # Latency penalty: 0 or -5
         latency = -5.0 if p99 > 500 else 0.0
@@ -146,14 +147,10 @@ class CircuitBreakerEnv(gym.Env):
         # err_rate 0->1 maps to 0->-10
         error = -10.0 * err_rate
         
-        # False positive: -3 if unnecessary CB open
-        # NOTE (known limitation, CB-002): `cb` here is the circuit-breaker state
-        # recorded in the dataset (environment observation), NOT the action chosen
-        # by the agent. Because the training dataset has cb==0 in every row, this
-        # penalty never fires and provides no training signal. A future fix should
-        # condition on the agent's action (e.g. action <= 1) instead of the dataset
-        # cb column to correctly penalise false-positive circuit-breaker trips.
-        fp = -3.0 if (cb == 1 and err_rate < 0.05) else 0.0
+        # False positive: penalise agent for choosing strict action (0=Emergency,
+        # 1=Strict) when error rate is low. Uses agent's action, not the dataset
+        # cb column (which is always 0 in the training data and fires no signal).
+        fp = -3.0 if (action <= 1 and err_rate < 0.05) else 0.0
         
         # Action appropriateness bonus
         # Action 0,1 (strict) good when err high
