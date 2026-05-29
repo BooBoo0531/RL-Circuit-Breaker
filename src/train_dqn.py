@@ -62,7 +62,7 @@ def train_dqn():
         best_model_save_path="./logs/dqn_best_model",
         log_path="./logs/dqn_eval/",
         eval_freq=10000,
-        n_eval_episodes=5,
+        n_eval_episodes=10,
         deterministic=True,
         render=False,
         verbose=1
@@ -89,16 +89,16 @@ def train_dqn():
     )
 
     print("\nStarting DQN training:")
-    print(f"   - Total timesteps: 500,000")
-    print(f"   - Buffer size: 100,000")
+    print(f"   - Total timesteps: 1,000,000")
+    print(f"   - Buffer size: 200,000")
     print(f"   - Batch size: 64")
-    print(f"   - Learning rate: 1e-4")
-    print(f"   - Exploration: eps 1.0 -> 0.05 (20% of training)")
-    print(f"   - Target update interval: 1000 steps")
+    print(f"   - Learning rate: 5e-5")
+    print(f"   - Exploration: eps 1.0 -> 0.05 (40% of training)")
+    print(f"   - Target update interval: 2000 steps")
     print(f"   - Observation: 7 features")
     print(f"   - Actions: 5 discrete\n")
 
-    # Train 500k timesteps
+    # Train 1M timesteps
     model.learn(
         total_timesteps=1000000,
         callback=[reward_callback, eval_callback],

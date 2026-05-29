@@ -4,11 +4,19 @@ from gymnasium import spaces
 
 
 class CircuitBreakerEnv(gym.Env):
-    """Gymnasium environment for Circuit Breaking in Kubernetes"""
+    """Gymnasium environment for Circuit Breaking in Kubernetes.
+
+    Normalization note: max_rps=1000 and max_latency=1000 are calibrated for
+    an Azure Standard_B2s_v2 node running the Fortio load generator at ~20 RPS
+    steady-state. Real observed values in this experiment stay well below these
+    ceilings (max rps ~84, max latency ~900 ms), so normalized features occupy
+    only a fraction of the [0, 1] range. Adjusting these constants to match the
+    actual dataset range (e.g. max_rps=100) would improve gradient signal.
+    """
     
     metadata = {"render_modes": ["human"]}
     
-    def __init__(self, data_path='behavioral_dataset (1).csv'):
+    def __init__(self, data_path='data/behavioral_dataset.csv'):
         super().__init__()
         
         # Load behavioral data
@@ -43,14 +51,15 @@ class CircuitBreakerEnv(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         
-        # Randomly pick a scenario (sid 1-5)
-        self.current_scenario = np.random.randint(1, 6)
-        
+        # Randomly pick a scenario (sid 1-5) using gymnasium's seeded RNG
+        self.current_scenario = int(self.np_random.integers(1, 6))
+
         # Load rows for that scenario only
         self.scenario_data = self.full_df[self.full_df['sid'] == self.current_scenario].copy()
-        
-        # Shuffle the scenario data
-        self.scenario_data = self.scenario_data.sample(frac=1.0, random_state=seed).reset_index(drop=True)
+
+        # Shuffle the scenario data using a seed derived from the gymnasium RNG
+        shuffle_seed = int(self.np_random.integers(0, 2**31))
+        self.scenario_data = self.scenario_data.sample(frac=1.0, random_state=shuffle_seed).reset_index(drop=True)
         
         # Start new episode
         self.current_step = 0

@@ -95,19 +95,13 @@ def train_ppo():
         tensorboard_log="./ppo_circuit_breaker_tensorboard/"
     )
     
-    print("\n🚀 Starting training with SIMPLIFIED config:")
-    print(f"   - Total timesteps: 300,000")
-    print(f"   - n_steps: 1024")
+    print("\nStarting training with SIMPLIFIED config:")
+    print(f"   - Total timesteps: 1,000,000")
+    print(f"   - n_steps: 2048")
     print(f"   - batch_size: 64")
     print(f"   - learning_rate: 3e-4")
-    print(f"   - max_steps per episode: 50")
-    print(f"   - Observation: 7 features (no history)")
-    print(f"\n📊 REWARD SIGNAL:")
-    print(f"   - Good state (err<0.1 & p99<500): +10")
-    print(f"   - Bad state (err>0.3): -20")
-    print(f"   - SLO violation (p99>500): -15")
-    print(f"   - False positive (CB open, err<0.05): -5")
-    print(f"   - Throughput bonus: rps/20\n")
+    print(f"   - max_steps per episode: 100")
+    print(f"   - Observation: 7 features (no history)\n")
     
     model.learn(
         total_timesteps=1000000,
@@ -239,14 +233,14 @@ if __name__ == "__main__":
     print("EVALUATING BEST MODEL (from evaluation callback)")
     print("=" * 70)
     try:
-        best_model = PPO.load("./logs/best_model/best_model")
+        best_model = PPO.load("./logs/ppo_best_model/best_model")
         evaluate_model(best_model, env, n_episodes=10)
     except:
-        print("⚠️  Best model not found, skipping best model evaluation")
+        print("Best model not found, skipping best model evaluation")
     
-    print("\n🎉 Training complete! Files saved:")
+    print("\nTraining complete! Files saved:")
     print("   - ppo_circuit_breaker.zip (final model)")
-    print("   - ./logs/best_model/best_model.zip (best model)")
+    print("   - ./logs/ppo_best_model/best_model.zip (best model)")
     print("   - ppo_reward_curve.png (plot)")
     print("   - ppo_circuit_breaker_tensorboard/ (logs)")
     print("   - ./logs/ (evaluation results)\n")
