@@ -72,15 +72,16 @@ def train_dqn():
     model = DQN(
         "MlpPolicy",
         env,
-        learning_rate=1e-4,
-        buffer_size=100000,
-        learning_starts=1000,
+        learning_rate=5e-5,
+        buffer_size=200000,
+        learning_starts=10000,
         batch_size=64,
         tau=0.005,
         gamma=0.99,
         train_freq=4,
-        target_update_interval=1000,
-        exploration_fraction=0.2,
+        gradient_steps=1,
+        target_update_interval=2000,
+        exploration_fraction=0.4,
         exploration_initial_eps=1.0,
         exploration_final_eps=0.05,
         verbose=1,
@@ -99,7 +100,7 @@ def train_dqn():
 
     # Train 500k timesteps
     model.learn(
-        total_timesteps=500000,
+        total_timesteps=1000000,
         callback=[reward_callback, eval_callback],
         progress_bar=True
     )
