@@ -650,7 +650,7 @@ def main():
 
     print("\n  Loading models (best checkpoint preferred over final)...")
 
-    ppo_best_path = "./logs/best_model/best_model"
+    ppo_best_path = "logs/ppo_best_model/best_model"
     ppo_final_path = "ppo_circuit_breaker"
     try:
         ppo_model = PPO.load(ppo_best_path)
@@ -664,7 +664,7 @@ def main():
         except Exception as e:
             print(f"    PPO: not found ({e})")
 
-    dqn_best_path = "./logs/dqn_best_model/best_model"
+    dqn_best_path = "logs/dqn_best_model/best_model"
     dqn_final_path = "dqn_circuit_breaker"
     try:
         dqn_model = DQN.load(dqn_best_path)

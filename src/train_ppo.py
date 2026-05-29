@@ -69,10 +69,10 @@ def train_ppo():
     os.makedirs("./logs/", exist_ok=True)
     eval_callback = EvalCallback(
         eval_env,
-        best_model_save_path="./logs/best_model",
-        log_path="./logs/",
+        best_model_save_path="./logs/ppo_best_model",
+        log_path="./logs/ppo_eval/",
         eval_freq=10000,
-        n_eval_episodes=5,
+        n_eval_episodes=10,
         deterministic=True,
         render=False,
         verbose=1
@@ -82,9 +82,9 @@ def train_ppo():
     model = PPO(
         "MlpPolicy",
         env,
-        learning_rate=3e-4,      # Standard learning rate
-        n_steps=1024,            # Reset to 1024
-        batch_size=64,           # Reset to 64
+        learning_rate=3e-4,
+        n_steps=2048,
+        batch_size=64,
         n_epochs=10,
         gamma=0.99,
         gae_lambda=0.95,
@@ -109,17 +109,15 @@ def train_ppo():
     print(f"   - False positive (CB open, err<0.05): -5")
     print(f"   - Throughput bonus: rps/20\n")
     
-    # Train with 300k timesteps
     model.learn(
-        total_timesteps=500000,
+        total_timesteps=1000000,
         callback=[reward_callback, eval_callback],
         progress_bar=True
     )
-    
-    # Save final model
+
     model.save("ppo_circuit_breaker")
-    print("\n✅ Model saved: ppo_circuit_breaker.zip")
-    print("✅ Best model saved: ./logs/best_model/best_model.zip")
+    print("\nModel saved: ppo_circuit_breaker.zip")
+    print("Best model saved: ./logs/ppo_best_model/best_model.zip")
     
     return model, reward_callback
 
