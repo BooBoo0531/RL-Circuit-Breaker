@@ -24,3 +24,6 @@ events.out.tfevents.*
 # OS
 .DS_Store
 Thumbs.db
+
+# Local only - do not commit
+ON_TAP_BAO_CAO.md
