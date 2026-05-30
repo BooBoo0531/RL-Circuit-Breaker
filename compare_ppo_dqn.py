@@ -1,214 +1,262 @@
 """
 Fair PPO vs DQN Comparison Script
-Compares both algorithms using moving averages of episode rewards
+Evaluate PPO and DQN on balanced scenarios and generate comparison plots.
 """
 
+import os
+import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from stable_baselines3 import PPO, DQN
-import sys
+
 sys.path.append('src')
 from circuit_breaker_env import CircuitBreakerEnv
-import os
 
 
-def evaluate_model(model, env, n_episodes=1000):
+DATA_PATH = 'data/behavioral_dataset.csv'
+PPO_MODEL_PATH = 'ppo_circuit_breaker'
+DQN_MODEL_PATH = 'dqn_circuit_breaker'
+RESULTS_DIR = 'results'
+
+N_EPISODES = 1000
+MOVING_AVG_WINDOW = 50
+SCENARIOS = [1, 2, 3, 4, 5]
+
+
+def evaluate_model_balanced(model, env, n_episodes=1000):
     """
-    Evaluate a trained model and return episode rewards
-    
-    Args:
-        model: Trained RL model (PPO or DQN)
-        env: Environment to evaluate on
-        n_episodes: Number of episodes to run
-        
-    Returns:
-        List of episode rewards
+    Evaluate model with balanced scenario sequence.
+    Each scenario appears equally often.
     """
-    episode_rewards = []
-    
-    print(f"Evaluating model for {n_episodes} episodes...")
-    for ep in range(n_episodes):
-        obs, _ = env.reset()
-        episode_reward = 0
+    rewards = []
+    scenario_ids = []
+
+    scenario_sequence = [SCENARIOS[i % len(SCENARIOS)] for i in range(n_episodes)]
+
+    for ep, scenario in enumerate(scenario_sequence, start=1):
+        obs, info = env.reset(scenario=scenario)
+
+        total_reward = 0.0
         done = False
-        
+
         while not done:
             action, _ = model.predict(obs, deterministic=True)
-            obs, reward, terminated, truncated, _ = env.step(action)
-            episode_reward += reward
+            obs, reward, terminated, truncated, info = env.step(action)
+            total_reward += float(reward)
             done = terminated or truncated
-        
-        episode_rewards.append(episode_reward)
-        
-        if (ep + 1) % 50 == 0:
-            print(f"  Completed {ep + 1}/{n_episodes} episodes")
-    
-    return episode_rewards
+
+        rewards.append(total_reward)
+        scenario_ids.append(scenario)
+
+        if ep % 100 == 0:
+            print(f'  Completed {ep}/{n_episodes} episodes')
+
+    return np.array(rewards, dtype=float), np.array(scenario_ids, dtype=int)
 
 
-def calculate_moving_average(rewards, window=50):
-    """
-    Calculate moving average of rewards
-    
-    Args:
-        rewards: List of episode rewards
-        window: Window size for moving average
-        
-    Returns:
-        Moving average array
-    """
-    if len(rewards) < window:
-        window = max(1, len(rewards))
-    
-    moving_avg = np.convolve(rewards, np.ones(window)/window, mode='valid')
-    return moving_avg
+def moving_average(values, window):
+    values = np.array(values, dtype=float)
+
+    if len(values) < window:
+        window = len(values)
+
+    return np.convolve(values, np.ones(window) / window, mode='valid')
 
 
-def plot_comparison(ppo_rewards, dqn_rewards, window=50):
-    """
-    Plot PPO vs DQN comparison with moving averages
-    
-    Args:
-        ppo_rewards: List of PPO episode rewards
-        dqn_rewards: List of DQN episode rewards
-        window: Window size for moving average
-    """
-    # Calculate moving averages
-    ppo_ma = calculate_moving_average(ppo_rewards, window)
-    dqn_ma = calculate_moving_average(dqn_rewards, window)
-    
-    # Calculate statistics
+def print_summary(name, rewards):
+    print(f'\n{name} Summary')
+    print('-' * 60)
+    print(f'Episodes:      {len(rewards)}')
+    print(f'Mean reward:   {np.mean(rewards):.2f}')
+    print(f'Std reward:    {np.std(rewards):.2f}')
+    print(f'Median reward: {np.median(rewards):.2f}')
+    print(f'Min reward:    {np.min(rewards):.2f}')
+    print(f'Max reward:    {np.max(rewards):.2f}')
+
+
+def per_scenario_mean(rewards, scenario_ids):
+    result = {}
+
+    for sid in SCENARIOS:
+        sid_rewards = rewards[scenario_ids == sid]
+        result[sid] = {
+            'mean': np.mean(sid_rewards),
+            'std': np.std(sid_rewards),
+            'count': len(sid_rewards)
+        }
+
+    return result
+
+
+def plot_moving_average(ppo_rewards, dqn_rewards):
+    ppo_ma = moving_average(ppo_rewards, MOVING_AVG_WINDOW)
+    dqn_ma = moving_average(dqn_rewards, MOVING_AVG_WINDOW)
+
+    x = np.arange(MOVING_AVG_WINDOW, len(ppo_rewards) + 1)
+
     ppo_mean = np.mean(ppo_rewards)
     dqn_mean = np.mean(dqn_rewards)
-    ppo_std = np.std(ppo_rewards)
-    dqn_std = np.std(dqn_rewards)
-    
-    # Create figure
-    fig, ax = plt.subplots(figsize=(14, 7))
-    
-    # Plot PPO moving average
-    ppo_x = range(window-1, len(ppo_rewards))
-    ax.plot(ppo_x, ppo_ma, color='blue', linewidth=2.5, 
-            label=f'PPO Moving Avg (window={window})', alpha=0.9)
-    
-    # Plot DQN moving average
-    dqn_x = range(window-1, len(dqn_rewards))
-    ax.plot(dqn_x, dqn_ma, color='red', linewidth=2.5, 
-            label=f'DQN Moving Avg (window={window})', alpha=0.9)
-    
-    # Plot mean lines
-    ax.axhline(ppo_mean, color='blue', linestyle='--', linewidth=2, 
-               label=f'PPO Mean: {ppo_mean:.2f} ± {ppo_std:.2f}', alpha=0.7)
-    ax.axhline(dqn_mean, color='red', linestyle='--', linewidth=2, 
-               label=f'DQN Mean: {dqn_mean:.2f} ± {dqn_std:.2f}', alpha=0.7)
-    
-    # Add shaded regions for standard deviation
-    ax.axhspan(ppo_mean - ppo_std, ppo_mean + ppo_std, 
-               alpha=0.1, color='blue')
-    ax.axhspan(dqn_mean - dqn_std, dqn_mean + dqn_std, 
-               alpha=0.1, color='red')
-    
-    # Labels and title
-    ax.set_xlabel('Episode', fontsize=13, fontweight='bold')
-    ax.set_ylabel('Episode Reward', fontsize=13, fontweight='bold')
-    ax.set_title('PPO vs DQN - Moving Average Comparison', 
-                 fontsize=16, fontweight='bold', pad=20)
-    ax.legend(fontsize=11, loc='best', framealpha=0.9)
-    ax.grid(True, alpha=0.3, linestyle='--')
-    
-    # Add text box with winner
-    winner = 'PPO' if ppo_mean > dqn_mean else 'DQN'
-    improvement = abs(ppo_mean - dqn_mean)
-    textstr = f'Winner: {winner}\nImprovement: {improvement:.2f}'
-    props = dict(boxstyle='round', facecolor='wheat', alpha=0.8)
-    ax.text(0.02, 0.98, textstr, transform=ax.transAxes, fontsize=12,
-            verticalalignment='top', bbox=props)
-    
+
+    plt.figure(figsize=(12, 5))
+
+    plt.plot(
+        x,
+        ppo_ma,
+        linewidth=2.5,
+        label=f'PPO Moving Avg (window={MOVING_AVG_WINDOW})'
+    )
+
+    plt.plot(
+        x,
+        dqn_ma,
+        linewidth=2.5,
+        label=f'DQN Moving Avg (window={MOVING_AVG_WINDOW})'
+    )
+
+    plt.axhline(
+        ppo_mean,
+        linestyle='--',
+        linewidth=1.8,
+        label=f'PPO Mean: {ppo_mean:.2f}'
+    )
+
+    plt.axhline(
+        dqn_mean,
+        linestyle='--',
+        linewidth=1.8,
+        label=f'DQN Mean: {dqn_mean:.2f}'
+    )
+
+    diff = ppo_mean - dqn_mean
+    text = f'PPO Mean: {ppo_mean:.2f}\nDQN Mean: {dqn_mean:.2f}\nDifference: {diff:.2f}'
+
+    plt.text(
+        0.02,
+        0.97,
+        text,
+        transform=plt.gca().transAxes,
+        fontsize=10,
+        verticalalignment='top',
+        bbox=dict(boxstyle='round', facecolor='white', alpha=0.8)
+    )
+
+    plt.title('PPO vs DQN - Balanced Evaluation Moving Average')
+    plt.xlabel('Evaluation Episode')
+    plt.ylabel('Total Reward')
+    plt.grid(True, alpha=0.3, linestyle='--')
+    plt.legend()
     plt.tight_layout()
-    
-    # Save figure
-    os.makedirs('results', exist_ok=True)
-    plt.savefig('results/ppo_vs_dqn_comparison.png', dpi=150, bbox_inches='tight')
-    print("\n✅ Plot saved: results/ppo_vs_dqn_comparison.png")
-    
-    plt.show()
+
+    output_path = os.path.join(RESULTS_DIR, 'ppo_vs_dqn_moving_average.png')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f'Saved: {output_path}')
+
+
+def plot_boxplot(ppo_rewards, dqn_rewards):
+    plt.figure(figsize=(8, 5))
+
+    plt.boxplot(
+        [ppo_rewards, dqn_rewards],
+        labels=['PPO', 'DQN'],
+        showmeans=True
+    )
+
+    plt.title('PPO vs DQN - Reward Distribution')
+    plt.ylabel('Total Reward')
+    plt.grid(True, alpha=0.3, linestyle='--')
+    plt.tight_layout()
+
+    output_path = os.path.join(RESULTS_DIR, 'ppo_vs_dqn_boxplot.png')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f'Saved: {output_path}')
+
+
+def plot_per_scenario(ppo_rewards, dqn_rewards, ppo_sids, dqn_sids):
+    ppo_stats = per_scenario_mean(ppo_rewards, ppo_sids)
+    dqn_stats = per_scenario_mean(dqn_rewards, dqn_sids)
+
+    labels = [f'S{sid}' for sid in SCENARIOS]
+    ppo_means = [ppo_stats[sid]['mean'] for sid in SCENARIOS]
+    dqn_means = [dqn_stats[sid]['mean'] for sid in SCENARIOS]
+
+    x = np.arange(len(labels))
+    width = 0.35
+
+    plt.figure(figsize=(10, 5))
+
+    plt.bar(x - width / 2, ppo_means, width, label='PPO')
+    plt.bar(x + width / 2, dqn_means, width, label='DQN')
+
+    plt.title('PPO vs DQN - Mean Reward per Scenario')
+    plt.xlabel('Scenario')
+    plt.ylabel('Mean Total Reward')
+    plt.xticks(x, labels)
+    plt.grid(True, axis='y', alpha=0.3, linestyle='--')
+    plt.legend()
+    plt.tight_layout()
+
+    output_path = os.path.join(RESULTS_DIR, 'ppo_vs_dqn_per_scenario.png')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f'Saved: {output_path}')
+
+    print('\nPer-scenario mean reward')
+    print('-' * 60)
+    print(f'{"Scenario":<10} {"PPO":>12} {"DQN":>12} {"Diff(PPO-DQN)":>18}')
+    for sid in SCENARIOS:
+        ppo_mean = ppo_stats[sid]['mean']
+        dqn_mean = dqn_stats[sid]['mean']
+        diff = ppo_mean - dqn_mean
+        print(f'S{sid:<9} {ppo_mean:>12.2f} {dqn_mean:>12.2f} {diff:>18.2f}')
 
 
 def main():
-    """Main comparison function"""
-    
-    print("=" * 70)
-    print("PPO vs DQN - Fair Comparison with Moving Averages")
-    print("=" * 70)
-    
-    # Create environment
-    env = CircuitBreakerEnv(data_path='data/behavioral_dataset.csv')
-    
-    # Load PPO model
-    print("\n📘 Loading PPO model...")
-    try:
-        ppo_model = PPO.load("ppo_circuit_breaker")
-        print("✅ PPO model loaded successfully")
-    except Exception as e:
-        print(f"❌ Error loading PPO model: {e}")
-        return
-    
-    # Load DQN model
-    print("\n📕 Loading DQN model...")
-    try:
-        dqn_model = DQN.load("dqn_circuit_breaker")
-        print("✅ DQN model loaded successfully")
-    except Exception as e:
-        print(f"❌ Error loading DQN model: {e}")
-        return
-    
-    # Evaluate PPO
-    print("\n" + "=" * 70)
-    print("EVALUATING PPO MODEL")
-    print("=" * 70)
-    ppo_rewards = evaluate_model(ppo_model, env, n_episodes=1000)
-    
-    # Evaluate DQN
-    print("\n" + "=" * 70)
-    print("EVALUATING DQN MODEL")
-    print("=" * 70)
-    dqn_rewards = evaluate_model(dqn_model, env, n_episodes=1000)
-    
-    # Print statistics
-    print("\n" + "=" * 70)
-    print("COMPARISON STATISTICS")
-    print("=" * 70)
-    print(f"PPO Episodes:     {len(ppo_rewards)}")
-    print(f"PPO Mean Reward:  {np.mean(ppo_rewards):.2f} ± {np.std(ppo_rewards):.2f}")
-    print(f"PPO Min/Max:      {np.min(ppo_rewards):.2f} / {np.max(ppo_rewards):.2f}")
-    print(f"PPO Median:       {np.median(ppo_rewards):.2f}")
-    print()
-    print(f"DQN Episodes:     {len(dqn_rewards)}")
-    print(f"DQN Mean Reward:  {np.mean(dqn_rewards):.2f} ± {np.std(dqn_rewards):.2f}")
-    print(f"DQN Min/Max:      {np.min(dqn_rewards):.2f} / {np.max(dqn_rewards):.2f}")
-    print(f"DQN Median:       {np.median(dqn_rewards):.2f}")
-    print()
-    
-    # Determine winner
-    ppo_mean = np.mean(ppo_rewards)
-    dqn_mean = np.mean(dqn_rewards)
-    winner = 'PPO' if ppo_mean > dqn_mean else 'DQN'
-    improvement = abs(ppo_mean - dqn_mean)
-    improvement_pct = (improvement / max(abs(float(ppo_mean)), abs(float(dqn_mean)))) * 100
-    
-    print(f"🏆 Winner: {winner}")
-    print(f"📊 Improvement: {improvement:.2f} ({improvement_pct:.1f}%)")
-    print("=" * 70)
-    
-    # Plot comparison
-    print("\n📊 Creating comparison plot...")
-    plot_comparison(ppo_rewards, dqn_rewards, window=50)
-    
-    print("\n🎉 Comparison complete!")
-    print("   - Both models evaluated for 200 episodes")
-    print("   - Moving averages calculated (window=50)")
-    print("   - Comparison plot saved to results/ppo_vs_dqn_comparison.png")
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+
+    print('=' * 70)
+    print('PPO vs DQN - Balanced Evaluation Comparison')
+    print('=' * 70)
+
+    env = CircuitBreakerEnv(data_path=DATA_PATH)
+
+    print('\nLoading PPO model...')
+    ppo_model = PPO.load(PPO_MODEL_PATH)
+
+    print('Loading DQN model...')
+    dqn_model = DQN.load(DQN_MODEL_PATH)
+
+    print(f'\nEvaluating PPO for {N_EPISODES} balanced episodes...')
+    ppo_rewards, ppo_sids = evaluate_model_balanced(
+        ppo_model,
+        env,
+        n_episodes=N_EPISODES
+    )
+
+    print(f'\nEvaluating DQN for {N_EPISODES} balanced episodes...')
+    dqn_rewards, dqn_sids = evaluate_model_balanced(
+        dqn_model,
+        env,
+        n_episodes=N_EPISODES
+    )
+
+    print_summary('PPO', ppo_rewards)
+    print_summary('DQN', dqn_rewards)
+
+    plot_moving_average(ppo_rewards, dqn_rewards)
+    plot_boxplot(ppo_rewards, dqn_rewards)
+    plot_per_scenario(ppo_rewards, dqn_rewards, ppo_sids, dqn_sids)
+
+    print('\nComparison complete.')
+    print(f'Generated plots in: {RESULTS_DIR}/')
+    print(' - ppo_vs_dqn_moving_average.png')
+    print(' - ppo_vs_dqn_boxplot.png')
+    print(' - ppo_vs_dqn_per_scenario.png')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
