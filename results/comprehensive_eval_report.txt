@@ -1,17 +1,17 @@
 ==========================================================================
 COMPREHENSIVE EVALUATION REPORT
 RL for Adaptive Circuit Breaking and Retry Strategy
-Generated: 2026-05-30 03:09:13
+Generated: 2026-05-30 14:29:52
 Episodes per policy: 50
 ==========================================================================
 
 
 MULTI-BASELINE COMPARISON
 ----------------------------------------
-  Random         Mean: -73.71 +/- 240.63
-  Rule-based     Mean: 71.95 +/- 246.68
-  PPO            Mean: 75.30 +/- 241.41
-  DQN            Mean: -13.08 +/- 231.28
+  Random         Mean: -144.26 +/- 233.62
+  Rule-based     Mean: 41.25 +/- 234.91
+  PPO            Mean: 58.84 +/- 234.53
+  DQN            Mean: 41.34 +/- 232.44
 
 
 ACTION APPROPRIATENESS (%)
@@ -24,27 +24,27 @@ ACTION APPROPRIATENESS (%)
 SYSTEM METRICS
 ----------------------------------------
   Random:
-    SLO Compliance:  68.0%
-    Avg Error Rate:  0.1753
-    Throughput:      0.0265
-    FP Rate:         39.3%
-    Reaction Time:   1.2 steps
+    SLO Compliance:  74.0%
+    Avg Error Rate:  0.1568
+    Throughput:      0.2623
+    FP Rate:         40.0%
+    Reaction Time:   2.7 steps
   Rule-based:
-    SLO Compliance:  76.0%
-    Avg Error Rate:  0.1736
-    Throughput:      0.0276
+    SLO Compliance:  86.0%
+    Avg Error Rate:  0.2138
+    Throughput:      0.3044
     FP Rate:         0.0%
     Reaction Time:   1.0 steps
   PPO:
-    SLO Compliance:  84.0%
-    Avg Error Rate:  0.2071
-    Throughput:      0.0306
+    SLO Compliance:  74.0%
+    Avg Error Rate:  0.1870
+    Throughput:      0.2789
     FP Rate:         0.0%
     Reaction Time:   1.0 steps
   DQN:
-    SLO Compliance:  82.0%
-    Avg Error Rate:  0.1769
-    Throughput:      0.0287
+    SLO Compliance:  74.0%
+    Avg Error Rate:  0.2255
+    Throughput:      0.3030
     FP Rate:         0.0%
     Reaction Time:   1.0 steps
 
@@ -52,6 +52,29 @@ SYSTEM METRICS
 ==========================================================================
 CONCLUSION
 ==========================================================================
-  Best performer: PPO (mean reward: 75.30)
+  Best performer: PPO (mean reward: 58.84)
   RL models outperform rule-based heuristic → RL approach justified
+==========================================================================
+
+
+==========================================================================
+KNOWN LIMITATIONS
+==========================================================================
+  1. TRAIN/EVAL DATASET OVERLAP (EVAL-001):
+     Training and evaluation use the same dataset. Metrics reflect
+     in-sample performance. Hold-out split (e.g. sid=5 as test) is
+     recommended before drawing generalization conclusions.
+
+  2. HIGH STANDARD DEVIATION FROM SCENARIO SAMPLING:
+     Episode reward variance is dominated by which scenario the
+     environment randomly selects, not by policy quality. Std values
+     should be interpreted with this in mind; per-scenario breakdowns
+     (Metric 11) provide more stable signal.
+
+  3. OFFLINE SIMULATION — NOT PRODUCTION KUBERNETES:
+     All results are from a pre-recorded behavioral dataset. Real
+     Kubernetes deployments will have one-step feedback delay, noisy
+     Prometheus scrape intervals, and actuation latency not captured
+     here. Results should be validated against a live staging cluster
+     before production use.
 ==========================================================================
